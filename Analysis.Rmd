@@ -1,0 +1,112 @@
+---
+title: "Human Development Index Analysis"
+author: "Abhinav Erraguntla"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(readxl)
+library(tidyverse)
+```
+
+Explanation: Load packages for reading Excel files and data manipulation.
+
+```{r}
+github_url <- "https://raw.githubusercontent.com/DACSS-601/hw5-2/main/HDR25_Statistical_Annex_HDI_Table.xlsx"
+download.file(github_url, "HDI_Table.xlsx", mode = "wb", quiet = TRUE)
+hdi_data <- read_excel("HDI_Table.xlsx")
+```
+
+Explanation: Download HDI Excel file from GitHub and read it into R.
+
+
+
+
+```{r}
+hdi_data <- read_excel("HDI_Table.xlsx", skip = 5)
+head(hdi_data, 15)
+colnames(hdi_data)
+```
+
+Explanation: Skip first 5 rows to get past the header formatting, then view the data structure.
+
+
+```{r}
+hdi_data[1:20, ]
+str(hdi_data)
+```
+Explanation: View more rows and data types to understand which columns correspond to which indicators.
+
+
+```{r}
+hdi_clean <- hdi_data %>% 
+  select(Country, "(years)...5", "(years)...7", "(years)...9", "(2021 PPP $)") %>%
+  rename(Life_Expectancy = "(years)...5",
+         Expected_Schooling = "(years)...7",
+         Mean_Schooling = "(years)...9",
+         GNI_per_Capita = "(2021 PPP $)")
+```
+
+Explanation: Select the 4 required columns and rename them with underscores for clarity.
+
+
+```{r}
+hdi_clean <- hdi_clean %>% 
+  filter(!is.na(as.numeric(Life_Expectancy, na.action = na.pass))) %>%
+  mutate(Life_Expectancy = as.numeric(Life_Expectancy),
+         Expected_Schooling = as.numeric(Expected_Schooling),
+         Mean_Schooling = as.numeric(Mean_Schooling),
+         GNI_per_Capita = as.numeric(GNI_per_Capita))
+```
+
+Explanation: Keep only rows with numeric data and convert all columns to numeric type.
+
+```{r}
+hdi_clean <- hdi_clean %>% drop_na()
+head(hdi_clean)
+```
+
+Explanation: Remove any rows with missing values in any column, then view the cleaned data.
+
+
+```{r}
+means <- hdi_clean %>% summarise(
+  Mean_Life_Expectancy = mean(Life_Expectancy, na.rm = TRUE),
+  Mean_Expected_Schooling = mean(Expected_Schooling, na.rm = TRUE),
+  Mean_Mean_Schooling = mean(Mean_Schooling, na.rm = TRUE),
+  Mean_GNI_per_Capita = mean(GNI_per_Capita, na.rm = TRUE))
+means
+```
+Explanation: Calculate the mean of each of the four variables across all countries.
+
+
+```{r}
+write.csv(hdi_clean, "hdi_cleaned.csv", row.names = FALSE)
+```
+Explanation: Save the cleaned dataset as CSV file.
+
+
+```{r}
+ggplot(hdi_clean, aes(x = Life_Expectancy)) + geom_histogram(bins = 20, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Life Expectancy at Birth", x = "Years", y = "Number of Countries") + theme_minimal()
+```
+
+Explanation: Create histogram showing distribution of life expectancy across countries.
+
+
+```{r}
+ggplot(hdi_clean, aes(x = GNI_per_Capita, y = Life_Expectancy)) + geom_point(color = "darkred", size = 3) +
+  labs(title = "Life Expectancy vs GNI per Capita", x = "GNI per Capita (2021 PPP $)", y = "Life Expectancy (years)") + theme_minimal()
+```
+
+Explanation: Create scatter plot showing relationship between GNI and life expectancy.
+
+
+
+```{r}
+ggplot(hdi_clean, aes(x = Expected_Schooling, y = Mean_Schooling)) + geom_point(color = "darkgreen", size = 3) +
+  labs(title = "Expected Years of Schooling vs Mean Years of Schooling", x = "Expected Years", y = "Mean Years") + theme_minimal()
+```
+
+Explanation: Create scatter plot comparing expected and actual years of schooling.
